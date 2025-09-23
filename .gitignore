@@ -166,6 +166,13 @@ web-platform/node_modules/
 web-platform/.env.local
 web-platform/nul
 
+# HTML Reports (contain sensitive data)
+*.html
+sitecore_*.html
+phase1_report.html
+*_report_*.html
+*_report.html
+
 # Prisma
 web-platform/prisma/migrations/dev/
 
