@@ -1,0 +1,80 @@
+@startuml Smart Sitecore Analysis - Data Extraction Sequence
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Data Extraction Sequence
+
+actor "Developer" as dev
+participant "launch.py" as launcher
+participant "EnhancedPhase1Extractor" as extractor
+participant "SupabaseClientV2" as dbclient
+participant "Sitecore GraphQL API\n(your-sitecore-instance.com)" as sitecore
+database "PostgreSQL\n(your-database-server.com:5432)" as postgres
+
+== Manual Extraction Process ==
+
+dev -> launcher : python launch.py GrabSiteCoreData
+activate launcher
+
+launcher -> extractor : initialize()
+activate extractor
+
+extractor -> dbclient : initialize_connection()
+activate dbclient
+
+dbclient -> postgres : connect(your-database-user)
+postgres -> dbclient : connection_established
+dbclient -> extractor : connection_ready
+deactivate dbclient
+
+== GraphQL Schema Extraction ==
+
+extractor -> sitecore : POST /sitecore/api/graph/edge\n(introspection query)
+note right : Headers:\nsc_apikey: {YOUR-SITECORE-API-KEY}
+
+sitecore -> extractor : GraphQL Schema\n(1.1MB+, 216 types, 2968 fields)
+
+extractor -> extractor : parse_schema()
+note right : Extract types, fields,\ninheritance relationships
+
+== Content Discovery ==
+
+extractor -> sitecore : POST /sitecore/api/graph/edge\n(content query for /sitecore/content)
+sitecore -> extractor : Site Structure Data\n(4 sites discovered)
+
+extractor -> extractor : analyze_sites()
+note right : Parse:\n- Home (Sample Item, 0 children)\n- Site A (App, 4 children)\n- Site B (App, 4 children)\n- Corporate Site (Folder, 1 child)
+
+== Database Storage ==
+
+extractor -> dbclient : store_scan_record()
+activate dbclient
+
+dbclient -> postgres : INSERT INTO scans_v2\n(scan metadata, status, confidence)
+postgres -> dbclient : scan_id
+
+dbclient -> postgres : INSERT INTO scan_modules\n(module results, confidence scores)
+postgres -> dbclient : module_ids
+
+dbclient -> postgres : INSERT INTO analysis_results\n(JSON data with site details)
+postgres -> dbclient : result_ids
+
+dbclient -> extractor : storage_complete
+deactivate dbclient
+
+== Completion ==
+
+extractor -> launcher : extraction_complete\n(4 sites, 216 types, 1.33s duration)
+deactivate extractor
+
+launcher -> dev : ✅ Extraction Successful\nSites: 4 discovered\nConfidence: 90%+\nDuration: 1.33 seconds
+
+deactivate launcher
+
+note over postgres
+  **Stored Data:**
+  - scans_v2: Scan metadata
+  - scan_modules: Module results
+  - analysis_results: JSON site data
+  - 9 total scans, 2 successful
+end note
+
+@enduml

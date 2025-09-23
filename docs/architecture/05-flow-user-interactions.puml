@@ -1,0 +1,171 @@
+@startuml Smart Sitecore Analysis - User Interaction Flow
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - User Interaction Flows
+
+!define DECISION_COLOR #FFE082
+!define ACTION_COLOR #C8E6C9
+!define ERROR_COLOR #FFCDD2
+!define SUCCESS_COLOR #DCEDC8
+
+start
+
+:User wants to analyze\nSitecore data;
+
+if (Preferred interaction method?) then (Command Line)
+  :Open terminal;
+  :Navigate to Project20;
+
+  if (What action?) then (Fresh extraction)
+    :python launch.py GrabSiteCoreData;
+    if (Extraction successful?) then (yes)
+      :Display results:\n4 sites discovered\n216 GraphQL types\n1.33 seconds duration;
+      :Data stored in PostgreSQL; #SUCCESS_COLOR
+    else (no)
+      :Show error:\nDatabase connection failed\nSitecore API error\nAuthentication failed; #ERROR_COLOR
+      stop
+    endif
+
+  elseif (Database report) then
+    :python launch.py database_report;
+:Generate HTML report\nwith site breakdown; #SUCCESS_COLOR
+
+  elseif (Web platform) then
+    :python launch.py web-dev;
+    :Start Next.js server\non localhost:3000;
+    if (Port available?) then (yes)
+      :Server started on 3000;
+    else (no)
+      :Server started on 3001;
+    endif
+
+  elseif (Diagnostics) then
+    :python launch.py diagnose_database;
+    :Test PostgreSQL connection;
+    if (Connection successful?) then (yes)
+:Show: Connected\n26+ tables found; #SUCCESS_COLOR
+    else (no)
+:Show: Connection failed\nCheck credentials; #ERROR_COLOR
+      stop
+    endif
+  endif
+
+else (Web Interface)
+  :Open browser;
+  :Navigate to http://localhost:3000;
+
+  if (Web server running?) then (yes)
+    :Load Smart Sitecore\nAnalysis Platform;
+    :See tab navigation:\n- Extracted Sitecore Data\n- Customer Portfolio;
+
+    if (Which tab?) then (Extracted Sitecore Data)
+      :Load SitecoreDashboard component;
+      :Fetch data from API;
+
+      if (Database connected?) then (yes)
+        :Display real data:\nStatistics Overview\n4 Discovered Sites\nPerformance Metrics;
+
+        partition "Site Exploration" {
+          :View site details:;
+          :• Home (Sample Item, 0 children);
+          :• nextjs-app-21 (App, 4 children);
+          :• react-app-21 (App, 4 children);
+          :• TG Architects (Folder, 1 child);
+        }
+
+        if (User action?) then (Run Extraction)
+          :Click "Run Extraction" button;
+          :Show loading state;
+          :Execute Python script via API;
+
+          if (Extraction successful?) then (yes)
+            :Show success message;
+            :Auto-refresh data;
+            :Update statistics; #SUCCESS_COLOR
+          else (no)
+            :Show error message:\n"Extraction failed"\nor "Timeout occurred"; #ERROR_COLOR
+          endif
+
+        elseif (Explore Sites) then
+          :Click "View Details" on site card;
+          :Show expanded site information:\n- Template details\n- Field samples\n- Child content; #ACTION_COLOR
+
+        elseif (Refresh Data) then
+          :Click "Refresh" button;
+          :Reload data from database;
+          :Update UI with latest info; #ACTION_COLOR
+        endif
+
+      else (no)
+        :Show database error:\nDatabase Connection Error\n"Failed to fetch Sitecore data";
+        :Offer "Retry Connection" button; #ERROR_COLOR
+      endif
+
+    else (Customer Portfolio)
+      :Load existing customer\nmanagement interface;
+      :Show customer selection\nand portfolio dashboard; #ACTION_COLOR
+    endif
+
+  else (no)
+    :Show browser error:\n"This site can't be reached"\n"localhost refused to connect";
+
+    partition "Solution Steps" {
+      :1. Check if web server is running;
+      :2. Run: cd web-platform && npm run dev;
+      :3. Or run: python launch.py web-dev;
+      :4. Wait for "Ready" message;
+      :5. Refresh browser;
+}
+  endif
+endif
+
+partition "Data Validation" {
+  if (Results look correct?) then (yes)
+    :Platform working correctly:\n- 4 sites discovered\n- Real Sitecore data\n- Database connected\n- Web UI functional; #SUCCESS_COLOR
+  else (no)
+    :Troubleshooting:\n- Check database credentials\n- Verify Sitecore API access\n- Clear Next.js cache\n- Review extraction logs; #ERROR_COLOR
+  endif
+}
+
+stop
+
+note right
+  **Key User Paths:**
+
+  **Developer/Admin:**
+  - Command line for bulk operations
+  - Database diagnostics and reports
+  - Manual extraction triggers
+
+  **Business User:**
+  - Web interface for data visualization
+  - Site exploration and analysis
+  - Interactive extraction triggers
+
+  **Data Consumer:**
+  - Dashboard for real-time statistics
+  - Site portfolio overview
+  - Performance monitoring
+end note
+
+note left
+  **System Status Indicators:**
+
+  **Green (Working):**
+  - Database connected
+  - 4 sites discovered
+  - Recent successful scan
+  - API endpoints responding
+
+  **Red (Issues):**
+  - Connection failures
+  - Extraction timeouts
+  - Missing credentials
+  - Port conflicts
+
+  **Yellow (Warnings):**
+  - No recent scans
+  - Low confidence scores
+  - Partial data available
+end note
+
+@enduml

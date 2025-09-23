@@ -1,0 +1,61 @@
+@startuml Smart Sitecore Analysis - C4 Container (Simple)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Container Diagram
+
+actor "Developer/Admin" as developer
+actor "Business User" as business_user
+actor "Data Consumer" as data_consumer
+
+rectangle "Smart Sitecore Analysis Platform v2.0" {
+    rectangle "Command Line Interface\nPython" as cli_interface
+    rectangle "Extraction Engine\nPython" as extraction_engine
+    rectangle "Web Platform\nNext.js 14 + React + TypeScript" as web_platform
+    rectangle "API Layer\nNext.js API Routes" as api_layer
+    rectangle "Database Client\nPython" as database_client
+    rectangle "Data Service\nTypeScript" as data_service
+}
+
+rectangle "Sitecore CMS\ncm-qa-sc103.kajoo.ca" as sitecore_cms
+database "PostgreSQL Database\nPostgreSQL 13+" as postgresql_db
+
+' User interactions
+developer --> cli_interface : "CLI commands"
+business_user --> web_platform : "Web interface"
+data_consumer --> web_platform : "Dashboards"
+
+' Internal relationships
+cli_interface --> extraction_engine : "Extraction"
+extraction_engine --> database_client : "Data storage"
+web_platform --> api_layer : "API calls"
+api_layer --> data_service : "Business logic"
+data_service --> postgresql_db : "Database queries"
+api_layer --> cli_interface : "Script execution"
+
+' External connections
+extraction_engine --> sitecore_cms : "GraphQL"
+database_client --> postgresql_db : "Data persistence"
+
+note right of cli_interface
+  **Commands:**
+  - GrabSiteCoreData
+  - web-dev
+  - database_report
+  - diagnose_database
+end note
+
+note top of web_platform
+  **Features:**
+  - Real-time dashboard
+  - Site exploration
+  - Extraction triggers
+  - Connection monitoring
+end note
+
+note bottom of postgresql_db
+  **Schema v2.0:**
+  - scans_v2, scan_modules
+  - analysis_results (JSON)
+  - Multi-tenant support
+end note
+
+@enduml

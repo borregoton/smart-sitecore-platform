@@ -1,0 +1,51 @@
+# =====================================================
+# SMART SITECORE ANALYSIS ENGINE - WEB API CONTAINER
+# =====================================================
+# Flask-based REST API for Sitecore analysis
+
+FROM python:3.11-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    postgresql-dev \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir flask flask-cors gunicorn
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN addgroup -g 1001 -S python \
+    && adduser -S -D -H -u 1001 -s /sbin/nologin -G python python
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=web_api.py
+ENV FLASK_ENV=production
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Switch to non-root user
+USER python
+
+# Command to run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "300", "web_api:app"]

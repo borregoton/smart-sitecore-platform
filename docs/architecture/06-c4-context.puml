@@ -1,0 +1,56 @@
+@startuml Smart Sitecore Analysis - C4 Context Diagram
+!include C4_Context.puml
+
+title Smart Sitecore Analysis Platform v2.0 - System Context Diagram
+
+Person(developer, "Developer/Admin", "Technical user who performs bulk operations, database maintenance, and system diagnostics")
+Person(business_user, "Business User", "Analyzes Sitecore sites, explores data, and triggers extractions through web interface")
+Person(data_consumer, "Data Consumer", "Views dashboards, monitors performance, and consumes analysis reports")
+
+System(smart_platform, "Smart Sitecore Analysis Platform v2.0", "Comprehensive platform for analyzing Sitecore implementations, extracting data, and providing insights")
+
+System_Ext(sitecore_cms, "Sitecore CMS", "your-sitecore-instance.com - External Sitecore instance providing GraphQL API access to content and schema data")
+System_Ext(postgresql_db, "PostgreSQL Database", "your-database-server.com:5432 - External PostgreSQL instance for data storage with tenant-based authentication")
+
+Rel(developer, smart_platform, "Runs extraction commands, generates reports, diagnoses issues", "Command Line Interface")
+Rel(business_user, smart_platform, "Analyzes sites, triggers extractions, explores data", "Web Browser (HTTP/HTTPS)")
+Rel(data_consumer, smart_platform, "Views dashboards, monitors metrics", "Web Browser (HTTP/HTTPS)")
+
+Rel(smart_platform, sitecore_cms, "Extracts schema and content data", "GraphQL over HTTPS\nAPI Key Authentication")
+Rel(smart_platform, postgresql_db, "Stores and retrieves analysis results", "PostgreSQL Protocol\nTenant-based Auth")
+
+note right of smart_platform
+  **Core Capabilities:**
+  - GraphQL schema extraction (216 types, 2968 fields)
+  - Multi-site content analysis (4 sites discovered)
+  - Real-time web dashboard
+  - Command-line batch operations
+  - Performance metrics and confidence scoring
+  - Automated HTML report generation
+end note
+
+note left of sitecore_cms
+  **Data Provided:**
+  - GraphQL Schema (1.1MB+)
+  - Content Structure
+  - Template Definitions
+  - Site Hierarchy
+  - Field Samples
+
+  **Authentication:**
+  sc_apikey: {{YOUR-SITECORE-API-KEY}}
+end note
+
+note right of postgresql_db
+  **Data Storage:**
+  - 26+ tables (v2.0 schema)
+  - 9 total scans, 2 successful
+  - JSON analysis results
+  - Scan metadata and statistics
+  - Multi-tenant support
+
+  **Connection:**
+  User: your-database-user
+end note
+
+@enduml

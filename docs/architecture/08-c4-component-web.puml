@@ -1,0 +1,106 @@
+@startuml Smart Sitecore Analysis - C4 Component Diagram (Web Platform)
+!include C4_Component.puml
+
+title Smart Sitecore Analysis Platform v2.0 - Web Platform Components
+
+Person(business_user, "Business User", "Analyzes Sitecore data")
+
+Container_Boundary(web_platform, "Web Platform - Next.js 14") {
+    Component(main_page, "Main Page", "React TSX", "app/page.tsx - Root page with tab navigation between Sitecore Data and Customer Portfolio")
+
+    Component(sitecore_dashboard, "Sitecore Dashboard", "React Component", "SitecoreDashboard - Main dashboard displaying statistics, site data, and extraction controls")
+
+    Component(sitecore_hook, "useSitecoreData Hook", "React Hook", "Custom hook managing data fetching, state, and refresh logic")
+
+    Component(statistics_cards, "Statistics Cards", "React Component", "Displays total scans, successful scans, avg confidence, last scan date")
+
+    Component(site_grid, "Site Grid", "React Component", "Interactive grid showing discovered sites with templates and child counts")
+
+    Component(extraction_controls, "Extraction Controls", "React Component", "Run Extraction button with loading states and status feedback")
+}
+
+Container_Boundary(api_layer, "API Layer - Next.js API Routes") {
+    Component(extracted_sites_api, "Extracted Sites API", "API Route", "/api/sitecore/extracted-sites - GET endpoint returning site data and statistics")
+
+    Component(trigger_extraction_api, "Trigger Extraction API", "API Route", "/api/sitecore/trigger-extraction - POST endpoint for web-triggered extractions")
+}
+
+Container_Boundary(data_service, "Data Service Layer") {
+    Component(sitecore_data_service, "SitecoreDataService", "TypeScript Class", "Main service class with methods for data retrieval and extraction triggering")
+
+    Component(postgres_pool, "PostgreSQL Pool", "Connection Pool", "Database connection management with pg library")
+
+    Component(query_builder, "Query Builder", "Utility Functions", "SQL query construction for statistics and site data")
+}
+
+ContainerDb(postgresql_db, "PostgreSQL Database", "Data Storage")
+
+Container_Ext(python_extraction, "Python Extraction Engine", "External Process")
+
+' User interactions
+Rel(business_user, main_page, "Navigates to application", "HTTPS")
+Rel(main_page, sitecore_dashboard, "Renders dashboard component", "React props")
+
+' Dashboard component relationships
+Rel(sitecore_dashboard, sitecore_hook, "Uses data management hook", "React hook")
+Rel(sitecore_dashboard, statistics_cards, "Passes statistics data", "React props")
+Rel(sitecore_dashboard, site_grid, "Passes site array data", "React props")
+Rel(sitecore_dashboard, extraction_controls, "Handles extraction triggers", "Event callbacks")
+
+' Data flow
+Rel(sitecore_hook, extracted_sites_api, "Fetches data", "HTTP GET")
+Rel(extraction_controls, trigger_extraction_api, "Triggers extraction", "HTTP POST")
+
+' API to service layer
+Rel(extracted_sites_api, sitecore_data_service, "getExtractedSiteData()", "Method call")
+Rel(trigger_extraction_api, sitecore_data_service, "triggerExtraction()", "Method call")
+
+' Service layer internals
+Rel(sitecore_data_service, postgres_pool, "Database queries", "SQL")
+Rel(sitecore_data_service, query_builder, "Build SQL queries", "Function calls")
+Rel(postgres_pool, postgresql_db, "Connection pool", "PostgreSQL protocol")
+
+' External process interaction
+Rel(trigger_extraction_api, python_extraction, "Execute launch.py script", "Child process")
+
+note top of sitecore_dashboard
+  **Key Features:**
+  - Real-time statistics display
+  - 4 discovered sites visualization
+  - Connection status monitoring
+  - Interactive extraction triggers
+  - Auto-refresh after extractions
+end note
+
+note left of sitecore_data_service
+  **Service Methods:**
+  - getExtractedSiteData()
+  - getScanStatistics()
+  - triggerExtraction()
+  - getRecentScans()
+
+  **Database Queries:**
+  - Statistics aggregation from scans_v2
+  - Site data from analysis_results
+  - Join operations with scan_modules
+end note
+
+note right of query_builder
+  **Query Types:**
+  - COUNT scans by status
+  - AVG confidence scores
+  - MAX completion dates
+  - JSON parsing for site data
+  - LIMIT and ORDER BY clauses
+end note
+
+note bottom of postgres_pool
+  **Connection Config:**
+  - Host: 10.0.0.196:5432
+  - User: postgres.zyafowjs5i4ltxxq
+  - Database: postgres
+  - Pool management for concurrent requests
+  - Error handling and reconnection
+end note
+
+@enduml

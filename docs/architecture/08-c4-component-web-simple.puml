@@ -1,0 +1,72 @@
+@startuml Smart Sitecore Analysis - C4 Web Components (Simple)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Web Platform Components
+
+actor "Business User" as business_user
+
+rectangle "Web Platform - Next.js 14" {
+    rectangle "Main Page\napp/page.tsx" as main_page
+    rectangle "Sitecore Dashboard\nSitecoreDashboard Component" as sitecore_dashboard
+    rectangle "useSitecoreData Hook\nCustom React Hook" as sitecore_hook
+    rectangle "Statistics Cards\nReact Component" as statistics_cards
+    rectangle "Site Grid\nReact Component" as site_grid
+    rectangle "Extraction Controls\nReact Component" as extraction_controls
+}
+
+rectangle "API Layer - Next.js API Routes" {
+    rectangle "Extracted Sites API\n/api/sitecore/extracted-sites" as extracted_sites_api
+    rectangle "Trigger Extraction API\n/api/sitecore/trigger-extraction" as trigger_extraction_api
+}
+
+rectangle "Data Service Layer" {
+    rectangle "SitecoreDataService\nTypeScript Class" as sitecore_data_service
+    rectangle "PostgreSQL Pool\nConnection Pool" as postgres_pool
+    rectangle "Query Builder\nUtility Functions" as query_builder
+}
+
+database "PostgreSQL Database" as postgresql_db
+rectangle "Python Extraction Engine" as python_extraction
+
+' User interactions
+business_user --> main_page : "Web access"
+main_page --> sitecore_dashboard : "Renders"
+
+' Dashboard components
+sitecore_dashboard --> sitecore_hook : "Data hook"
+sitecore_dashboard --> statistics_cards : "Statistics"
+sitecore_dashboard --> site_grid : "Site data"
+sitecore_dashboard --> extraction_controls : "Controls"
+
+' Data flow
+sitecore_hook --> extracted_sites_api : "Fetch data"
+extraction_controls --> trigger_extraction_api : "Trigger"
+
+' API to service
+extracted_sites_api --> sitecore_data_service : "getExtractedSiteData()"
+trigger_extraction_api --> sitecore_data_service : "triggerExtraction()"
+
+' Service internals
+sitecore_data_service --> postgres_pool : "SQL queries"
+sitecore_data_service --> query_builder : "Build queries"
+postgres_pool --> postgresql_db : "Connection"
+
+' External process
+trigger_extraction_api --> python_extraction : "Execute script"
+
+note top of sitecore_dashboard
+  **Features:**
+  - Real-time statistics
+  - 4 discovered sites
+  - Connection monitoring
+  - Interactive triggers
+end note
+
+note left of sitecore_data_service
+  **Methods:**
+  - getExtractedSiteData()
+  - getScanStatistics()
+  - triggerExtraction()
+  - getRecentScans()
+end note
+
+@enduml

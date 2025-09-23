@@ -1,0 +1,111 @@
+@startuml Smart Sitecore Analysis - C4 Component Diagram (Web Platform - Offline)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Web Platform Components
+
+' Define colors offline
+!define PERSON_COLOR #08427B
+!define COMPONENT_COLOR #85BBF0
+!define DATABASE_COLOR #438DD5
+!define EXTERNAL_COLOR #999999
+
+actor "Business User" as business_user #PERSON_COLOR
+
+rectangle "Web Platform - Next.js 14" {
+    rectangle "Main Page\napp/page.tsx" as main_page #COMPONENT_COLOR
+    note left of main_page
+      Root page with tab navigation:
+      - Sitecore Data
+      - Customer Portfolio
+    end note
+
+    rectangle "Sitecore Dashboard\nSitecoreDashboard Component" as sitecore_dashboard #COMPONENT_COLOR
+    note top of sitecore_dashboard
+      **Key Features:**
+      - Real-time statistics display
+      - 4 discovered sites visualization
+      - Connection status monitoring
+      - Interactive extraction triggers
+      - Auto-refresh after extractions
+    end note
+
+    rectangle "useSitecoreData Hook\nCustom React Hook" as sitecore_hook #COMPONENT_COLOR
+
+    rectangle "Statistics Cards\nReact Component" as statistics_cards #COMPONENT_COLOR
+
+    rectangle "Site Grid\nReact Component" as site_grid #COMPONENT_COLOR
+
+    rectangle "Extraction Controls\nReact Component" as extraction_controls #COMPONENT_COLOR
+}
+
+rectangle "API Layer - Next.js API Routes" {
+    rectangle "Extracted Sites API\n/api/sitecore/extracted-sites" as extracted_sites_api #COMPONENT_COLOR
+
+    rectangle "Trigger Extraction API\n/api/sitecore/trigger-extraction" as trigger_extraction_api #COMPONENT_COLOR
+}
+
+rectangle "Data Service Layer" {
+    rectangle "SitecoreDataService\nTypeScript Class" as sitecore_data_service #COMPONENT_COLOR
+    note left of sitecore_data_service
+      **Service Methods:**
+      - getExtractedSiteData()
+      - getScanStatistics()
+      - triggerExtraction()
+      - getRecentScans()
+
+      **Database Queries:**
+      - Statistics aggregation from scans_v2
+      - Site data from analysis_results
+      - Join operations with scan_modules
+    end note
+
+    rectangle "PostgreSQL Pool\nConnection Pool" as postgres_pool #COMPONENT_COLOR
+    note bottom of postgres_pool
+      **Connection Config:**
+      - Host: 10.0.0.196:5432
+      - User: postgres.zyafowjs5i4ltxxq
+      - Database: postgres
+      - Pool management for concurrent requests
+      - Error handling and reconnection
+    end note
+
+    rectangle "Query Builder\nUtility Functions" as query_builder #COMPONENT_COLOR
+    note right of query_builder
+      **Query Types:**
+      - COUNT scans by status
+      - AVG confidence scores
+      - MAX completion dates
+      - JSON parsing for site data
+      - LIMIT and ORDER BY clauses
+    end note
+}
+
+database "PostgreSQL Database" as postgresql_db #DATABASE_COLOR
+rectangle "Python Extraction Engine" as python_extraction #EXTERNAL_COLOR
+
+' User interactions
+business_user --> main_page : "Navigates to application\n(HTTPS)"
+main_page --> sitecore_dashboard : "Renders dashboard\ncomponent\n(React props)"
+
+' Dashboard component relationships
+sitecore_dashboard --> sitecore_hook : "Uses data management\nhook\n(React hook)"
+sitecore_dashboard --> statistics_cards : "Passes statistics\ndata\n(React props)"
+sitecore_dashboard --> site_grid : "Passes site array\ndata\n(React props)"
+sitecore_dashboard --> extraction_controls : "Handles extraction\ntriggers\n(Event callbacks)"
+
+' Data flow
+sitecore_hook --> extracted_sites_api : "Fetches data\n(HTTP GET)"
+extraction_controls --> trigger_extraction_api : "Triggers extraction\n(HTTP POST)"
+
+' API to service layer
+extracted_sites_api --> sitecore_data_service : "getExtractedSiteData()\n(Method call)"
+trigger_extraction_api --> sitecore_data_service : "triggerExtraction()\n(Method call)"
+
+' Service layer internals
+sitecore_data_service --> postgres_pool : "Database queries\n(SQL)"
+sitecore_data_service --> query_builder : "Build SQL queries\n(Function calls)"
+postgres_pool --> postgresql_db : "Connection pool\n(PostgreSQL protocol)"
+
+' External process interaction
+trigger_extraction_api --> python_extraction : "Execute launch.py script\n(Child process)"
+
+@enduml

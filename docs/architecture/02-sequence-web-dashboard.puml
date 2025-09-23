@@ -1,0 +1,124 @@
+@startuml Smart Sitecore Analysis - Web Dashboard Sequence
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Web Dashboard Loading Sequence
+
+actor "User" as user
+participant "Browser" as browser
+participant "Next.js Server\n(your-web-server:3000)" as nextjs
+participant "SitecoreDashboard\nComponent" as dashboard
+participant "useSitecoreData\nHook" as hook
+participant "/api/sitecore/\nextracted-sites" as api
+participant "SitecoreDataService" as service
+participant "PostgreSQL Pool" as pool
+database "PostgreSQL\n(your-database-server.com:5432)" as postgres
+
+== Initial Page Load ==
+
+user -> browser : Navigate to http://your-web-server:3000
+browser -> nextjs : GET /
+
+nextjs -> browser : HTML + React App
+note right : Includes tab navigation:\n- "Extracted Sitecore Data"\n- "Customer Portfolio"
+
+browser -> dashboard : Mount SitecoreDashboard
+activate dashboard
+
+== Data Loading Process ==
+
+dashboard -> hook : useSitecoreData()
+activate hook
+
+hook -> hook : useState/useEffect initialization
+hook -> api : fetch('/api/sitecore/extracted-sites')
+
+activate api
+api -> service : SitecoreDataService.getExtractedSiteData()
+activate service
+
+== Database Connection & Queries ==
+
+service -> pool : getPool().connect()
+activate pool
+
+pool -> postgres : connect(your-database-user)
+postgres -> pool : client connection
+pool -> service : client
+
+== Schema Inspection ==
+
+service -> postgres : SELECT column_name FROM information_schema.columns\nWHERE table_name = 'scans_v2'
+postgres -> service : column metadata
+note right : Available columns:\nid, customer_id, site_id, confidence_score,\nstatus, started_at, completed_at, etc.
+
+== Statistics Query ==
+
+service -> postgres : SELECT COUNT(*) as total_scans,\nCOUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_scans,\nAVG(COALESCE(confidence_score, 0)) as avg_confidence,\nMAX(completed_at) as last_scan_date\nFROM scans_v2
+postgres -> service : Statistics:\n9 total scans, 2 successful,\nlast scan: 2025-09-22T21:54:46.832Z
+
+== Site Data Query ==
+
+service -> postgres : SELECT ar.result, ar.created_at, sm.module, sm.confidence\nFROM analysis_results ar\nJOIN scan_modules sm ON ar.scan_module_id = sm.id\nWHERE sm.module LIKE '%content%' OR sm.module LIKE '%schema%'\nORDER BY ar.created_at DESC LIMIT 50
+postgres -> service : Analysis results JSON data
+
+service -> service : Parse JSON for site data
+note right : Extract from result.sites:\n- Home (/sitecore/content/Home)\n- Site A (App template, 4 children)\n- Site B (App template, 4 children)\n- Corporate Site (Folder template, 1 child)
+
+pool -> postgres : release connection
+deactivate pool
+
+service -> api : Site data + statistics
+deactivate service
+
+api -> hook : JSON Response:\n{\n  "sites": [4 sites],\n  "statistics": {...},\n  "connected": true\n}
+deactivate api
+
+== UI Updates ==
+
+hook -> dashboard : Update state with real data
+deactivate hook
+
+dashboard -> browser : Render components:
+note right : **Statistics Cards:**\n- Total Scans: 9\n- Sites Discovered: 4\n- Avg Confidence: 90%+\n- Last Scan: Sep 22, 2025
+
+dashboard -> browser : Render site grid:
+note right : **Site Cards:**\n- Home (Sample Item, 0 children)\n- Site A (App, 4 children)\n- Site B (App, 4 children)\n- Corporate Site (Folder, 1 child)
+
+dashboard -> browser : Connection status: ✅ Connected
+deactivate dashboard
+
+== User Interactions ==
+
+user -> browser : Click "Run Extraction" button
+browser -> dashboard : Handle extraction trigger
+
+dashboard -> api : fetch('/api/sitecore/trigger-extraction', {method: 'POST'})
+activate api
+
+api -> service : SitecoreDataService.triggerExtraction()
+activate service
+
+service -> service : Execute: cd "Project20" && python launch.py GrabSiteCoreData
+note right : Calls Python extraction script\nwith 60 second timeout
+
+service -> api : Extraction result
+deactivate service
+
+api -> dashboard : {success: true, message: "Extraction completed"}
+deactivate api
+
+dashboard -> hook : Trigger refetch()
+hook -> api : Re-fetch updated data
+api -> dashboard : Updated site data
+
+dashboard -> browser : Update UI with fresh data
+
+note over postgres
+  **Live Database Content:**
+  - 9 scans total (2 successful)
+  - 4 Sitecore sites discovered
+  - Real GraphQL schema (1.1MB+)
+  - Template analysis (App, Sample Item, Folder)
+  - Content metrics (child counts, field samples)
+end note
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml Smart Sitecore Analysis - System Context (Simple)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - System Context
+
+actor "Developer/Admin" as developer
+actor "Business User" as business_user
+actor "Data Consumer" as data_consumer
+
+rectangle "Smart Sitecore Analysis Platform v2.0" as smart_platform
+
+rectangle "Sitecore CMS\ncm-qa-sc103.kajoo.ca" as sitecore_cms
+database "PostgreSQL Database\n10.0.0.196:5432" as postgresql_db
+
+developer --> smart_platform : "CLI operations\ndiagnostics"
+business_user --> smart_platform : "Web interface\ndata analysis"
+data_consumer --> smart_platform : "Dashboards\nmonitoring"
+
+smart_platform --> sitecore_cms : "GraphQL extraction\nAPI key auth"
+smart_platform --> postgresql_db : "Data storage\ntenant auth"
+
+note right of smart_platform
+  **Core Capabilities:**
+  - GraphQL schema extraction (216 types)
+  - Multi-site content analysis (4 sites)
+  - Real-time web dashboard
+  - Command-line operations
+  - Performance metrics
+end note
+
+note left of sitecore_cms
+  **Data Provided:**
+  - GraphQL Schema (1.1MB+)
+  - Content Structure
+  - Template Definitions
+  - Site Hierarchy
+
+  **Authentication:**
+  sc_apikey: {34B8FFF8-8F50-4C41-95A8-D2A9304EBD52}
+end note
+
+note right of postgresql_db
+  **Data Storage:**
+  - 26+ tables (v2.0 schema)
+  - 9 total scans, 2 successful
+  - JSON analysis results
+  - Multi-tenant support
+
+  **Connection:**
+  User: postgres.zyafowjs5i4ltxxq
+end note
+
+@enduml

@@ -1,0 +1,116 @@
+@startuml Smart Sitecore Analysis - Web-Triggered Extraction Sequence
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Web-Triggered Extraction Sequence
+
+actor "User" as user
+participant "Browser" as browser
+participant "SitecoreDashboard" as dashboard
+participant "/api/sitecore/\ntrigger-extraction" as triggerapi
+participant "SitecoreDataService" as service
+participant "Node.js Child Process" as childprocess
+participant "Python launch.py" as launcher
+participant "EnhancedPhase1Extractor" as extractor
+participant "Sitecore GraphQL API" as sitecore
+database "PostgreSQL" as postgres
+participant "/api/sitecore/\nextracted-sites" as dataapi
+
+== User Initiates Extraction ==
+
+user -> browser : Click "Run Extraction" button
+browser -> dashboard : onClick handler
+dashboard -> dashboard : Set triggering state = true
+
+dashboard -> triggerapi : POST /api/sitecore/trigger-extraction
+activate triggerapi
+
+triggerapi -> service : SitecoreDataService.triggerExtraction()
+activate service
+
+== Execute Python Script ==
+
+service -> service : Calculate project path:\nprocess.cwd().replace('\\web-platform', '')
+service -> childprocess : execPromise(\n  `cd "${projectPath}" && python launch.py GrabSiteCoreData`,\n  { timeout: 60000, cwd: projectPath }\n)
+activate childprocess
+
+childprocess -> launcher : Execute: python launch.py GrabSiteCoreData
+activate launcher
+
+== Python Extraction Process (Same as Manual) ==
+
+launcher -> extractor : initialize and run extraction
+activate extractor
+
+extractor -> sitecore : GraphQL introspection + content queries
+sitecore -> extractor : Schema + site data (1.1MB+)
+
+extractor -> postgres : Store results in scans_v2, analysis_results
+postgres -> extractor : Data stored successfully
+
+extractor -> launcher : Extraction complete\n(4 sites, 216 types, ~1.3s)
+deactivate extractor
+
+launcher -> childprocess : stdout: Extraction completed\nstderr: (none)
+deactivate launcher
+
+== Return Results ==
+
+childprocess -> service : {stdout: "success output", stderr: ""}
+deactivate childprocess
+
+service -> service : Parse results:\nif stderr contains "Error" → failure\nelse → success
+
+service -> triggerapi : {\n  success: true,\n  message: "Extraction completed successfully."\n}
+deactivate service
+
+triggerapi -> dashboard : HTTP 200: {\n  success: true,\n  message: "...",\n  triggeredAt: "2025-09-22T22:41:33.850Z"\n}
+deactivate triggerapi
+
+== Refresh Dashboard Data ==
+
+dashboard -> dashboard : Set triggering state = false
+dashboard -> dashboard : Trigger refetch after 2 second delay
+
+dashboard -> dataapi : fetch('/api/sitecore/extracted-sites')
+activate dataapi
+
+dataapi -> postgres : Query updated data
+postgres -> dataapi : Fresh statistics and site data
+
+dataapi -> dashboard : Updated response with fresh data
+deactivate dataapi
+
+== UI Updates ==
+
+dashboard -> browser : Update statistics:
+note right : **New Statistics:**\n- Total Scans: 10 (was 9)\n- Successful Scans: 3 (was 2)\n- Last Scan: Just now\n- Sites: Still 4 discovered
+
+dashboard -> browser : Update site data:
+note right : **Refreshed Site Data:**\n- Same 4 sites with potential\n  updated field samples\n- Updated timestamps\n- Fresh confidence scores
+
+dashboard -> browser : Show success notification:
+note right : "Extraction completed successfully.\nData has been updated."
+
+== Error Handling Example ==
+
+alt Extraction Timeout
+    childprocess -> service : Error: timeout after 60000ms
+    service -> triggerapi : {\n  success: false,\n  message: "Extraction is taking longer than expected."\n}
+    triggerapi -> dashboard : Error response
+    dashboard -> browser : Show error: "Extraction timeout"
+else Python Script Error
+    launcher -> childprocess : stderr: "Database connection failed"
+    childprocess -> service : {stdout: "", stderr: "Database connection failed"}
+    service -> triggerapi : {\n  success: false,\n  message: "Extraction failed: Database connection failed"\n}
+    triggerapi -> dashboard : Error response
+    dashboard -> browser : Show error message
+end
+
+note over postgres
+  **Real-time Data Updates:**
+  - New scan record in scans_v2
+  - Fresh analysis_results entries
+  - Updated statistics visible immediately
+  - Zero downtime during extraction
+end note
+
+@enduml

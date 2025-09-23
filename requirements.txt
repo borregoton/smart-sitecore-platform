@@ -1,0 +1,105 @@
+# Smart Sitecore Analysis Platform
+# Python Dependencies - Version 2.0
+# DelusionalSecurity Development Team
+
+# ===== Core Dependencies =====
+
+# Database
+psycopg2-binary>=2.9.0
+asyncpg>=0.28.0
+supabase>=2.19.0
+
+# HTTP & API
+requests>=2.31.0
+aiohttp>=3.8.0
+httpx>=0.24.0
+urllib3>=2.0.0
+
+# Web Framework (for API server)
+flask>=3.0.0
+flask-cors>=4.0.0
+werkzeug>=3.0.0
+
+# ===== Data Processing =====
+
+# Data validation and models
+pydantic>=2.0.0
+python-dateutil>=2.8.0
+
+# JSON handling
+orjson>=3.9.0
+jsonschema>=4.17.0
+
+# JWT & Authentication
+PyJWT[crypto]>=2.8.0
+
+# ===== Reporting & Visualization =====
+
+# HTML report generation
+jinja2>=3.1.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# ===== CLI & Configuration =====
+
+# Enhanced CLI
+click>=8.1.0
+rich>=13.0.0
+typer>=0.9.0
+
+# Configuration management
+python-dotenv>=1.0.0
+configparser>=5.3.0
+pyyaml>=6.0
+
+# Credential management
+keyring>=24.0.0
+cryptography>=41.0.0
+
+# ===== Development & Testing =====
+
+# Testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# Code quality
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+pylint>=2.17.0
+
+# ===== Utilities =====
+
+# System monitoring
+psutil>=5.9.0
+
+# File handling
+pathlib>=1.0.1
+watchdog>=3.0.0
+
+# Logging
+loguru>=0.7.0
+colorlog>=6.7.0
+
+# ===== Optional GUI Dependencies =====
+# Uncomment if using the GUI launcher
+
+# tkinter (usually comes with Python)
+# PyQt5>=5.15.0
+# PySide6>=6.5.0
+
+# ===== Production Dependencies =====
+
+# ASGI server for production
+gunicorn>=21.0.0
+uvicorn>=0.23.0
+
+# Process management
+supervisor>=4.2.0
+
+# ===== Version Constraints =====
+
+# Ensure compatible Python version
+# Requires Python 3.8 or higher

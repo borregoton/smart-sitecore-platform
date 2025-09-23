@@ -1,0 +1,110 @@
+@startuml Smart Sitecore Analysis - Deployment View
+!include C4_Deployment.puml
+
+title Smart Sitecore Analysis Platform v2.0 - Deployment Architecture
+
+Deployment_Node(dev_machine, "Developer Machine", "Windows 10/11") {
+    Deployment_Node(project_folder, "Project20 Directory", "File System") {
+        Container(cli_tools, "CLI Tools", "Python 3.8+", "launch.py, extraction scripts, database clients")
+        Container(web_platform, "Web Platform", "Next.js 14", "React dashboard running on localhost:3000")
+    }
+
+    Deployment_Node(python_env, "Python Environment", "Virtual Environment") {
+        Container(extraction_engine, "Extraction Engine", "Python", "EnhancedPhase1Extractor, SupabaseClientV2")
+        Container(dependencies, "Python Dependencies", "Libraries", "requests, psycopg2, json, datetime")
+    }
+
+    Deployment_Node(node_env, "Node.js Environment", "Node 18+") {
+        Container(nextjs_server, "Next.js Server", "Development Server", "Port 3000, API routes, React SSR")
+        Container(node_deps, "Node Dependencies", "npm packages", "React, TypeScript, pg, Next.js")
+    }
+}
+
+Deployment_Node(customer_infrastructure, "Customer Infrastructure", "External Network") {
+    Deployment_Node(sitecore_server, "Sitecore Server", "your-sitecore-instance.com") {
+        Container(sitecore_cms, "Sitecore CMS", "Sitecore 10.3", "GraphQL API, Content Management")
+        Container(graphql_endpoint, "GraphQL Endpoint", "API", "/sitecore/api/graph/edge")
+    }
+}
+
+Deployment_Node(database_infrastructure, "Database Infrastructure", "10.0.0.196") {
+    Deployment_Node(postgres_server, "PostgreSQL Server", "PostgreSQL 13+") {
+        ContainerDb(main_database, "Smart Platform DB", "PostgreSQL", "v2.0 schema, tenant-based auth")
+        Container(connection_pool, "Connection Pool", "pgbouncer/built-in", "Connection management")
+    }
+}
+
+' Deployment relationships
+Rel(cli_tools, extraction_engine, "Python script execution", "Process spawn")
+Rel(web_platform, nextjs_server, "Development build", "npm run dev")
+Rel(nextjs_server, extraction_engine, "Child process execution", "Python subprocess")
+
+' Network connections
+Rel(extraction_engine, graphql_endpoint, "HTTPS GraphQL requests", "443")
+Rel(nextjs_server, connection_pool, "PostgreSQL queries", "5432")
+Rel(extraction_engine, connection_pool, "Data persistence", "5432")
+
+' Authentication flows
+Rel(extraction_engine, sitecore_cms, "API Key Authentication", "sc_apikey header")
+Rel(nextjs_server, main_database, "Tenant Authentication", "postgres.zyafowjs5i4ltxxq")
+
+note top of dev_machine
+  **Development Environment:**
+  - Windows Platform (win32)
+  - Git Bash terminal
+  - Project20 folder structure
+  - Port 3000 for web development
+  - Command line and web access modes
+end note
+
+note right of customer_infrastructure
+  **External Sitecore System:**
+  - Production Sitecore 10.3 instance
+  - GraphQL API enabled
+  - Authentication via API key
+  - 216 GraphQL types available
+  - 2968 fields in schema
+  - 4 discoverable sites
+end note
+
+note bottom of database_infrastructure
+  **Database Configuration:**
+  - PostgreSQL 13+ with v2.0 schema
+  - 26+ tables for multi-site support
+  - Tenant-based authentication system
+  - Connection pooling for web requests
+  - JSON storage for analysis results
+  - Statistics aggregation capabilities
+end note
+
+note left of python_env
+  **Runtime Requirements:**
+  - Python 3.8 or higher
+  - Virtual environment isolation
+  - Database client libraries
+  - HTTP request libraries
+  - JSON processing capabilities
+end note
+
+note right of node_env
+  **Web Platform Stack:**
+  - Next.js 14 with App Router
+  - React 18 with TypeScript
+  - Server-side rendering
+  - API route handlers
+  - PostgreSQL direct connection
+  - Development hot reload
+end note
+
+' Deployment boundaries
+note top of dev_machine
+  **Development Deployment:**
+  Local development environment
+end note
+
+note top of customer_infrastructure
+  **External Systems:**
+  Production Sitecore and Database
+end note
+
+@enduml

@@ -1,0 +1,120 @@
+@startuml Smart Sitecore Analysis - Data Flow Architecture
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Data Flow Architecture
+
+!define RECTANGLE_COLOR #E1F5FE
+!define DATABASE_COLOR #F3E5F5
+!define API_COLOR #E8F5E8
+!define UI_COLOR #FFF3E0
+
+package "External Systems" {
+  [Sitecore CMS\nyour-sitecore-instance.com] as sitecore <<External System>> #FFE0E0
+  note right of sitecore
+    **GraphQL Endpoint:**
+    /sitecore/api/graph/edge
+
+    **Authentication:**
+    sc_apikey: {{YOUR-SITECORE-API-KEY}}
+
+    **Data Provided:**
+    - Schema: 216 types, 2968 fields
+    - Content: Site structure, templates
+    - Size: 1.1MB+ per extraction
+  end note
+}
+
+package "Extraction Layer" as extraction {
+  [launch.py\nCommand Interface] as launcher RECTANGLE_COLOR
+  [EnhancedPhase1Extractor\nPython Module] as extractor RECTANGLE_COLOR
+  [SupabaseClientV2\nDatabase Client] as dbclient RECTANGLE_COLOR
+
+  launcher -down-> extractor : "GrabSiteCoreData command"
+  extractor -down-> dbclient : "store_results()"
+}
+
+package "Data Storage" as storage {
+  database "PostgreSQL\nyour-database-server.com:5432" as postgres DATABASE_COLOR {
+    [scans_v2\nScan Metadata] as scans_table
+    [scan_modules\nModule Results] as modules_table
+    [analysis_results\nJSON Site Data] as results_table
+    [Compatibility Tables\nv1.0 Support] as v1_tables
+  }
+
+  note right of postgres
+    **Current Data:**
+    - 9 total scans
+    - 2 successful extractions
+    - 4 discovered sites
+    - Real Sitecore content
+
+    **Connection:**
+    User: your-database-user
+    Password: [env configured]
+  end note
+}
+
+package "Web Platform Layer" as webplatform {
+  [Next.js Server\nyour-web-server:3000] as nextjs UI_COLOR
+  [React Components\nSitecoreDashboard] as react UI_COLOR
+  [Custom Hooks\nuseSitecoreData] as hooks UI_COLOR
+
+  nextjs -down-> react : "SSR + Client Rendering"
+  react -down-> hooks : "Data Management"
+}
+
+package "API Layer" as api {
+  [/api/sitecore/extracted-sites\nGET Endpoint] as dataapi API_COLOR
+  [/api/sitecore/trigger-extraction\nPOST Endpoint] as triggerapi API_COLOR
+  [SitecoreDataService\nDatabase Service] as service API_COLOR
+  [PostgreSQL Pool\nConnection Management] as pool API_COLOR
+
+  dataapi -down-> service : "getExtractedSiteData()"
+  triggerapi -down-> service : "triggerExtraction()"
+  service -down-> pool : "Database Queries"
+}
+
+' Data Flow Connections
+sitecore -down-> extractor : "GraphQL Requests\n(Schema + Content)"
+extractor -down-> postgres : "Store Results\n(JSON + Metadata)"
+postgres -up-> pool : "Query Data\n(Connection Pool)"
+pool -up-> service : "Site Data +\nStatistics"
+service -up-> dataapi : "Formatted Response"
+dataapi -up-> hooks : "REST API Call"
+hooks -up-> react : "State Updates"
+
+' Web Extraction Flow
+react -down-> triggerapi : "User Trigger\n(Button Click)"
+triggerapi -down-> launcher : "Execute Python\n(Child Process)"
+
+' Data Types and Flow Labels
+sitecore -[hidden]-> extraction
+extraction -[hidden]-> storage
+storage -[hidden]-> api
+api -[hidden]-> webplatform
+
+note top of extraction
+  **Extraction Triggers:**
+  1. Manual: python launch.py GrabSiteCoreData
+  2. Web UI: Click "Run Extraction" button
+  3. Potential: Scheduled/automated
+end note
+
+note bottom of webplatform
+  **User Experience:**
+  - Real-time statistics display
+  - Interactive site exploration
+  - Web-based extraction triggers
+  - Database connection monitoring
+end note
+
+note as DataFlowNote
+  **Data Flow Summary:**
+
+  1. **Extraction**: Sitecore GraphQL → Python → PostgreSQL
+  2. **Storage**: JSON results in analysis_results table
+  3. **Retrieval**: PostgreSQL → API Service → React UI
+  4. **Display**: 4 discovered sites with real metrics
+  5. **Feedback Loop**: Web UI can trigger new extractions
+end note
+
+@enduml

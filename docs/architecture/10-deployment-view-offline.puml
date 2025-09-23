@@ -1,0 +1,136 @@
+@startuml Smart Sitecore Analysis - Deployment View (Offline)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Deployment Architecture
+
+' Define colors offline
+!define NODE_COLOR #F0F0F0
+!define CONTAINER_COLOR #85BBF0
+!define DATABASE_COLOR #438DD5
+!define EXTERNAL_COLOR #999999
+
+node "Developer Machine\nWindows 10/11" as dev_machine #NODE_COLOR {
+    node "Project20 Directory\nFile System" as project_folder #NODE_COLOR {
+        rectangle "CLI Tools\nPython 3.8+" as cli_tools #CONTAINER_COLOR
+        note left of cli_tools
+          launch.py, extraction scripts,
+          database clients
+        end note
+
+        rectangle "Web Platform\nNext.js 14" as web_platform #CONTAINER_COLOR
+        note right of web_platform
+          React dashboard running
+          on localhost:3000
+        end note
+    }
+
+    node "Python Environment\nVirtual Environment" as python_env #NODE_COLOR {
+        rectangle "Extraction Engine\nPython" as extraction_engine #CONTAINER_COLOR
+
+        rectangle "Python Dependencies\nLibraries" as dependencies #CONTAINER_COLOR
+        note bottom of dependencies
+          requests, psycopg2,
+          json, datetime
+        end note
+    }
+
+    node "Node.js Environment\nNode 18+" as node_env #NODE_COLOR {
+        rectangle "Next.js Server\nDevelopment Server" as nextjs_server #CONTAINER_COLOR
+        note bottom of nextjs_server
+          Port 3000, API routes,
+          React SSR
+        end note
+
+        rectangle "Node Dependencies\nnpm packages" as node_deps #CONTAINER_COLOR
+        note bottom of node_deps
+          React, TypeScript,
+          pg, Next.js
+        end note
+    }
+}
+
+node "Kajoo Infrastructure\nExternal Network" as kajoo_infrastructure #NODE_COLOR {
+    node "Sitecore Server\ncm-qa-sc103.kajoo.ca" as sitecore_server #NODE_COLOR {
+        rectangle "Sitecore CMS\nSitecore 10.3" as sitecore_cms #EXTERNAL_COLOR
+
+        rectangle "GraphQL Endpoint\nAPI" as graphql_endpoint #EXTERNAL_COLOR
+        note bottom of graphql_endpoint
+          /sitecore/api/graph/edge
+        end note
+    }
+}
+
+node "Database Infrastructure\n10.0.0.196" as database_infrastructure #NODE_COLOR {
+    node "PostgreSQL Server\nPostgreSQL 13+" as postgres_server #NODE_COLOR {
+        database "Smart Platform DB\nPostgreSQL" as main_database #DATABASE_COLOR
+        note bottom of main_database
+          v2.0 schema,
+          tenant-based auth
+        end note
+
+        rectangle "Connection Pool\npgbouncer/built-in" as connection_pool #CONTAINER_COLOR
+    }
+}
+
+' Deployment relationships
+cli_tools --> extraction_engine : "Python script execution\n(Process spawn)"
+web_platform --> nextjs_server : "Development build\n(npm run dev)"
+nextjs_server --> extraction_engine : "Child process execution\n(Python subprocess)"
+
+' Network connections
+extraction_engine --> graphql_endpoint : "HTTPS GraphQL requests\n(Port 443)"
+nextjs_server --> connection_pool : "PostgreSQL queries\n(Port 5432)"
+extraction_engine --> connection_pool : "Data persistence\n(Port 5432)"
+
+' Authentication flows
+extraction_engine --> sitecore_cms : "API Key Authentication\n(sc_apikey header)"
+nextjs_server --> main_database : "Tenant Authentication\n(postgres.zyafowjs5i4ltxxq)"
+
+note top of dev_machine
+  **Development Environment:**
+  - Windows Platform (win32)
+  - Git Bash terminal
+  - Project20 folder structure
+  - Port 3000 for web development
+  - Command line and web access modes
+end note
+
+note right of kajoo_infrastructure
+  **External Sitecore System:**
+  - Production Sitecore 10.3 instance
+  - GraphQL API enabled
+  - Authentication via API key
+  - 216 GraphQL types available
+  - 2968 fields in schema
+  - 4 discoverable sites
+end note
+
+note bottom of database_infrastructure
+  **Database Configuration:**
+  - PostgreSQL 13+ with v2.0 schema
+  - 26+ tables for multi-site support
+  - Tenant-based authentication system
+  - Connection pooling for web requests
+  - JSON storage for analysis results
+  - Statistics aggregation capabilities
+end note
+
+note left of python_env
+  **Runtime Requirements:**
+  - Python 3.8 or higher
+  - Virtual environment isolation
+  - Database client libraries
+  - HTTP request libraries
+  - JSON processing capabilities
+end note
+
+note right of node_env
+  **Web Platform Stack:**
+  - Next.js 14 with App Router
+  - React 18 with TypeScript
+  - Server-side rendering
+  - API route handlers
+  - PostgreSQL direct connection
+  - Development hot reload
+end note
+
+@enduml

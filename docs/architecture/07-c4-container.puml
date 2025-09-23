@@ -1,0 +1,80 @@
+@startuml Smart Sitecore Analysis - C4 Container Diagram
+!include C4_Container.puml
+
+title Smart Sitecore Analysis Platform v2.0 - Container Diagram
+
+Person(developer, "Developer/Admin", "Command line operations")
+Person(business_user, "Business User", "Web interface usage")
+Person(data_consumer, "Data Consumer", "Dashboard viewing")
+
+System_Boundary(smart_platform, "Smart Sitecore Analysis Platform v2.0") {
+    Container(cli_interface, "Command Line Interface", "Python", "launch.py - Entry point for all CLI operations including extraction, reports, and diagnostics")
+
+    Container(extraction_engine, "Extraction Engine", "Python", "EnhancedPhase1Extractor - Core extraction logic for processing Sitecore GraphQL data")
+
+    Container(web_platform, "Web Platform", "Next.js 14 + React + TypeScript", "Interactive web dashboard for data visualization and extraction triggers")
+
+    Container(api_layer, "API Layer", "Next.js API Routes", "RESTful endpoints for data access and extraction triggers")
+
+    Container(database_client, "Database Client", "Python", "SupabaseClientV2 - Database abstraction layer with connection pooling")
+
+    Container(data_service, "Data Service", "TypeScript", "SitecoreDataService - Business logic for data retrieval and processing")
+}
+
+System_Ext(sitecore_cms, "Sitecore CMS", "your-sitecore-instance.com")
+ContainerDb(postgresql_db, "PostgreSQL Database", "PostgreSQL 13+", "Stores scan results, analysis data, and metadata with v2.0 multi-site schema")
+
+' User interactions
+Rel(developer, cli_interface, "Executes commands", "Terminal/Command Prompt")
+Rel(business_user, web_platform, "Views dashboards, triggers extractions", "HTTPS")
+Rel(data_consumer, web_platform, "Views metrics and reports", "HTTPS")
+
+' Internal system relationships
+Rel(cli_interface, extraction_engine, "Initializes and runs extraction", "Python imports")
+Rel(extraction_engine, database_client, "Stores extraction results", "Python method calls")
+Rel(web_platform, api_layer, "Fetches data, triggers operations", "HTTP REST API")
+Rel(api_layer, data_service, "Business logic calls", "TypeScript imports")
+Rel(data_service, postgresql_db, "Direct database queries", "PostgreSQL protocol")
+Rel(api_layer, cli_interface, "Triggers Python scripts", "Child process execution")
+
+' External system connections
+Rel(extraction_engine, sitecore_cms, "GraphQL queries", "HTTPS + API Key")
+Rel(database_client, postgresql_db, "Data persistence", "PostgreSQL protocol")
+
+note top of cli_interface
+  **Commands Available:**
+  - GrabSiteCoreData (extraction)
+  - web-dev (start web server)
+  - database_report (HTML reports)
+  - diagnose_database (connectivity)
+  - inspect_schema (structure analysis)
+end note
+
+note top of web_platform
+  **Features:**
+  - Real-time statistics dashboard
+  - Interactive site exploration
+  - Web-based extraction triggers
+  - Tab navigation (Sitecore Data / Portfolio)
+  - Connection status monitoring
+end note
+
+note right of api_layer
+  **Endpoints:**
+  - GET /api/sitecore/extracted-sites
+  - POST /api/sitecore/trigger-extraction
+  - Connection pooling with pg library
+  - Error handling and validation
+end note
+
+note bottom of postgresql_db
+  **Schema v2.0:**
+  - scans_v2 (scan metadata)
+  - scan_modules (module results)
+  - analysis_results (JSON data)
+  - customers, sites, templates
+  - Indexes and constraints
+  - Multi-tenant support
+end note
+
+@enduml

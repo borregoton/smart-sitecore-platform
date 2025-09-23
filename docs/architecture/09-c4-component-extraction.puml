@@ -1,0 +1,121 @@
+@startuml Smart Sitecore Analysis - C4 Component Diagram (Extraction Engine)
+!include C4_Component.puml
+
+title Smart Sitecore Analysis Platform v2.0 - Extraction Engine Components
+
+Person(developer, "Developer", "Runs extraction commands")
+
+Container_Boundary(cli_interface, "Command Line Interface") {
+    Component(launch_script, "launch.py", "Python Script", "Main entry point with command routing and environment setup")
+
+    Component(command_router, "Command Router", "Python Function", "Routes commands to appropriate handlers (GrabSiteCoreData, web-dev, etc.)")
+
+    Component(grab_sitecore_data, "grab_sitecore_data.py", "Python Script", "Orchestrates complete extraction process with logging and statistics")
+}
+
+Container_Boundary(extraction_engine, "Extraction Engine") {
+    Component(multisite_extractor, "MultisiteDataExtractor", "Python Class", "Main extraction orchestrator managing the complete extraction workflow")
+
+    Component(enhanced_extractor, "EnhancedPhase1Extractor", "Python Class", "Core extraction logic for GraphQL schema and content analysis")
+
+    Component(graphql_client, "GraphQL Client", "HTTP Client", "Handles GraphQL introspection and content queries to Sitecore")
+
+    Component(schema_parser, "Schema Parser", "Python Module", "Parses GraphQL schema to extract types, fields, and relationships")
+
+    Component(content_analyzer, "Content Analyzer", "Python Module", "Analyzes site structure, templates, and field samples")
+
+    Component(confidence_scorer, "Confidence Scorer", "Python Module", "Calculates confidence scores based on extraction success metrics")
+}
+
+Container_Boundary(database_client, "Database Client Layer") {
+    Component(supabase_client_v2, "SupabaseClientV2", "Python Class", "Database abstraction layer with connection management")
+
+    Component(connection_manager, "Connection Manager", "Python Module", "Handles PostgreSQL connections with retry logic and error handling")
+
+    Component(data_serializer, "Data Serializer", "Python Module", "Converts Python objects to database-compatible JSON and SQL")
+
+    Component(transaction_manager, "Transaction Manager", "Python Module", "Manages database transactions and rollback operations")
+}
+
+System_Ext(sitecore_cms, "Sitecore CMS", "cm-qa-sc103.kajoo.ca")
+ContainerDb(postgresql_db, "PostgreSQL Database", "10.0.0.196:5432")
+
+' User interactions
+Rel(developer, launch_script, "python launch.py GrabSiteCoreData", "Command line")
+
+' CLI flow
+Rel(launch_script, command_router, "Parse and route commands", "Function call")
+Rel(command_router, grab_sitecore_data, "Execute extraction", "Python import")
+
+' Extraction orchestration
+Rel(grab_sitecore_data, multisite_extractor, "Initialize extraction", "Class instantiation")
+Rel(multisite_extractor, enhanced_extractor, "Run extraction logic", "Method call")
+
+' Core extraction components
+Rel(enhanced_extractor, graphql_client, "Make GraphQL requests", "HTTP calls")
+Rel(enhanced_extractor, schema_parser, "Parse schema response", "Function call")
+Rel(enhanced_extractor, content_analyzer, "Analyze site content", "Function call")
+Rel(enhanced_extractor, confidence_scorer, "Calculate scores", "Function call")
+
+' Database operations
+Rel(enhanced_extractor, supabase_client_v2, "Store extraction results", "Method calls")
+Rel(supabase_client_v2, connection_manager, "Manage connections", "Connection pooling")
+Rel(supabase_client_v2, data_serializer, "Serialize data", "JSON conversion")
+Rel(supabase_client_v2, transaction_manager, "Manage transactions", "Transaction control")
+
+' External connections
+Rel(graphql_client, sitecore_cms, "GraphQL over HTTPS", "API requests")
+Rel(connection_manager, postgresql_db, "PostgreSQL protocol", "Database connection")
+
+note top of multisite_extractor
+  **Extraction Workflow:**
+  1. Initialize database connection
+  2. Start new scan record
+  3. Execute GraphQL introspection
+  4. Extract content structure
+  5. Analyze and score results
+  6. Store in database with metadata
+end note
+
+note left of enhanced_extractor
+  **Core Extraction Logic:**
+  - GraphQL schema introspection (216 types)
+  - Content discovery (/sitecore/content)
+  - Template analysis (App, Sample Item, Folder)
+  - Field sample extraction
+  - Performance timing (1.33s average)
+end note
+
+note right of graphql_client
+  **GraphQL Operations:**
+  - Introspection query (1.1MB+ response)
+  - Content queries by path
+  - Authentication via sc_apikey header
+  - Error handling for API failures
+  - Response size management
+end note
+
+note bottom of supabase_client_v2
+  **Database Operations:**
+  - INSERT into scans_v2 (metadata)
+  - INSERT into scan_modules (results)
+  - INSERT into analysis_results (JSON)
+  - Connection pooling
+  - Transaction management
+  - Retry logic for failures
+
+  **Credentials:**
+  User: postgres.zyafowjs5i4ltxxq
+  Host: 10.0.0.196:5432
+end note
+
+note left of confidence_scorer
+  **Scoring Metrics:**
+  - Schema extraction success
+  - Content discovery count
+  - Field sample quality
+  - API response times
+  - Data completeness percentage
+end note
+
+@enduml

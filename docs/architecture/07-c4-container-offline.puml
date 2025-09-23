@@ -1,0 +1,88 @@
+@startuml Smart Sitecore Analysis - C4 Container Diagram (Offline)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - Container Diagram
+
+' Define colors offline
+!define PERSON_COLOR #08427B
+!define CONTAINER_COLOR #438DD5
+!define DATABASE_COLOR #85BBF0
+!define EXTERNAL_COLOR #999999
+
+actor "Developer/Admin" as developer #PERSON_COLOR
+actor "Business User" as business_user #PERSON_COLOR
+actor "Data Consumer" as data_consumer #PERSON_COLOR
+
+rectangle "Smart Sitecore Analysis Platform v2.0" {
+    rectangle "Command Line Interface\nPython" as cli_interface #CONTAINER_COLOR
+    note top of cli_interface
+      **Commands Available:**
+      - GrabSiteCoreData (extraction)
+      - web-dev (start web server)
+      - database_report (HTML reports)
+      - diagnose_database (connectivity)
+      - inspect_schema (structure analysis)
+    end note
+
+    rectangle "Extraction Engine\nPython" as extraction_engine #CONTAINER_COLOR
+    note left of extraction_engine
+      **Core Functions:**
+      - EnhancedPhase1Extractor
+      - GraphQL schema processing
+      - Content analysis
+      - Confidence scoring
+    end note
+
+    rectangle "Web Platform\nNext.js 14 + React + TypeScript" as web_platform #CONTAINER_COLOR
+    note top of web_platform
+      **Features:**
+      - Real-time statistics dashboard
+      - Interactive site exploration
+      - Web-based extraction triggers
+      - Tab navigation (Sitecore Data / Portfolio)
+      - Connection status monitoring
+    end note
+
+    rectangle "API Layer\nNext.js API Routes" as api_layer #CONTAINER_COLOR
+    note right of api_layer
+      **Endpoints:**
+      - GET /api/sitecore/extracted-sites
+      - POST /api/sitecore/trigger-extraction
+      - Connection pooling with pg library
+      - Error handling and validation
+    end note
+
+    rectangle "Database Client\nPython" as database_client #CONTAINER_COLOR
+
+    rectangle "Data Service\nTypeScript" as data_service #CONTAINER_COLOR
+}
+
+rectangle "Sitecore CMS\ncm-qa-sc103.kajoo.ca" as sitecore_cms #EXTERNAL_COLOR
+database "PostgreSQL Database\nPostgreSQL 13+" as postgresql_db #DATABASE_COLOR
+note bottom of postgresql_db
+  **Schema v2.0:**
+  - scans_v2 (scan metadata)
+  - scan_modules (module results)
+  - analysis_results (JSON data)
+  - customers, sites, templates
+  - Indexes and constraints
+  - Multi-tenant support
+end note
+
+' User interactions
+developer --> cli_interface : "Executes commands\n(Terminal/Command Prompt)"
+business_user --> web_platform : "Views dashboards,\ntriggers extractions\n(HTTPS)"
+data_consumer --> web_platform : "Views metrics\nand reports\n(HTTPS)"
+
+' Internal system relationships
+cli_interface --> extraction_engine : "Initializes and\nruns extraction\n(Python imports)"
+extraction_engine --> database_client : "Stores extraction\nresults\n(Python method calls)"
+web_platform --> api_layer : "Fetches data,\ntriggers operations\n(HTTP REST API)"
+api_layer --> data_service : "Business logic calls\n(TypeScript imports)"
+data_service --> postgresql_db : "Direct database\nqueries\n(PostgreSQL protocol)"
+api_layer --> cli_interface : "Triggers Python\nscripts\n(Child process execution)"
+
+' External system connections
+extraction_engine --> sitecore_cms : "GraphQL queries\n(HTTPS + API Key)"
+database_client --> postgresql_db : "Data persistence\n(PostgreSQL protocol)"
+
+@enduml

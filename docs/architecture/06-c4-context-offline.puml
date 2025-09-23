@@ -1,0 +1,84 @@
+@startuml Smart Sitecore Analysis - C4 Context Diagram (Offline)
+!theme plain
+title Smart Sitecore Analysis Platform v2.0 - System Context Diagram
+
+' Define C4 colors and styles offline
+!define PERSON_COLOR #08427B
+!define SYSTEM_COLOR #1168BD
+!define EXTERNAL_COLOR #999999
+
+rectangle "Actors" {
+  actor "Developer/Admin" as developer
+  note right of developer
+    Technical user who performs:
+    - Bulk operations
+    - Database maintenance
+    - System diagnostics
+  end note
+
+  actor "Business User" as business_user
+  note right of business_user
+    Analyzes Sitecore sites:
+    - Explores data
+    - Triggers extractions
+    - Views dashboards
+  end note
+
+  actor "Data Consumer" as data_consumer
+  note right of data_consumer
+    Consumes insights:
+    - Views dashboards
+    - Monitors performance
+    - Reviews reports
+  end note
+}
+
+rectangle "Smart Sitecore Analysis Platform v2.0" as smart_platform #SYSTEM_COLOR {
+  note top
+    **Core Capabilities:**
+    - GraphQL schema extraction (216 types, 2968 fields)
+    - Multi-site content analysis (4 sites discovered)
+    - Real-time web dashboard
+    - Command-line batch operations
+    - Performance metrics and confidence scoring
+    - Automated HTML report generation
+  end note
+}
+
+rectangle "External Systems" {
+  rectangle "Sitecore CMS\ncm-qa-sc103.kajoo.ca" as sitecore_cms #EXTERNAL_COLOR
+  note left of sitecore_cms
+    **Data Provided:**
+    - GraphQL Schema (1.1MB+)
+    - Content Structure
+    - Template Definitions
+    - Site Hierarchy
+    - Field Samples
+
+    **Authentication:**
+    sc_apikey: {34B8FFF8-8F50-4C41-95A8-D2A9304EBD52}
+  end note
+
+  database "PostgreSQL Database\n10.0.0.196:5432" as postgresql_db #EXTERNAL_COLOR
+  note right of postgresql_db
+    **Data Storage:**
+    - 26+ tables (v2.0 schema)
+    - 9 total scans, 2 successful
+    - JSON analysis results
+    - Scan metadata and statistics
+    - Multi-tenant support
+
+    **Connection:**
+    User: postgres.zyafowjs5i4ltxxq
+  end note
+}
+
+' Relationships
+developer --> smart_platform : "Runs extraction commands,\ngenerates reports,\ndiagnoses issues\n(Command Line Interface)"
+business_user --> smart_platform : "Analyzes sites,\ntriggers extractions,\nexplores data\n(Web Browser)"
+data_consumer --> smart_platform : "Views dashboards,\nmonitors metrics\n(Web Browser)"
+
+smart_platform --> sitecore_cms : "Extracts schema and\ncontent data\n(GraphQL over HTTPS\nAPI Key Authentication)"
+smart_platform --> postgresql_db : "Stores and retrieves\nanalysis results\n(PostgreSQL Protocol\nTenant-based Auth)"
+
+@enduml

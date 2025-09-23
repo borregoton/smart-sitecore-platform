@@ -1,0 +1,488 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================
+// CUSTOMER & ORGANIZATION MANAGEMENT
+// =============================
+
+model Customer {
+  id                     String    @id @default(uuid())
+  name                   String
+  displayName            String    @map("display_name")
+  customerCode           String    @unique @map("customer_code")
+  domain                 String?
+
+  // Customer details
+  industry               String?
+  companySize            String?   @map("company_size")
+  region                 String?
+  primaryContactName     String?   @map("primary_contact_name")
+  primaryContactEmail    String?   @map("primary_contact_email")
+
+  // Customer status
+  isActive               Boolean   @default(true) @map("is_active")
+  subscriptionTier       String    @default("Standard") @map("subscription_tier")
+  analysisFrequency      String    @default("Monthly") @map("analysis_frequency")
+  retentionPeriod        Int       @default(365) @map("retention_period")
+
+  // Security and access
+  apiKeyHash             String?   @map("api_key_hash")
+  accessRestrictions     Json      @default("{}") @map("access_restrictions")
+
+  // Metadata
+  notes                  String?
+  tags                   Json      @default("[]")
+
+  // Timestamps
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  lastAnalysisAt         DateTime? @map("last_analysis_at")
+
+  // Relations
+  sites                  CustomerSite[]
+  scans                  Scan[]
+  graphqlTypes          GraphqlType[]
+  contentItems          ContentItem[]
+  templateDefinitions   TemplateDefinition[]
+  fieldUsageStatistics  FieldUsageStatistic[]
+  crossSiteComparisons  CrossSiteComparison[]
+  portfolioInsights     PortfolioInsight[]
+
+  @@map("customers")
+}
+
+model CustomerSite {
+  id                     String    @id @default(uuid())
+  customerId             String    @map("customer_id")
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // Site identification
+  name                   String
+  fqdn                   String
+  sitecoreUrl            String    @map("sitecore_url")
+
+  // Site characteristics
+  siteType               String    @default("Website") @map("site_type")
+  environment            String    @default("Production")
+  sitecoreVersion        String?   @map("sitecore_version")
+
+  // Technical details
+  apiEndpoint            String?   @map("api_endpoint")
+  apiKeyEncrypted        String?   @map("api_key_encrypted")
+  authenticationMethod   String    @default("API_KEY") @map("authentication_method")
+
+  // Site status
+  isActive               Boolean   @default(true) @map("is_active")
+  isAccessible           Boolean   @default(true) @map("is_accessible")
+  lastSuccessfulScan     DateTime? @map("last_successful_scan")
+  lastScanError          String?   @map("last_scan_error")
+
+  // Analysis settings
+  scanFrequency          String    @default("Weekly") @map("scan_frequency")
+  analysisDepth          String    @default("Standard") @map("analysis_depth")
+  enabledModules         Json      @default("[\"schema\", \"content\", \"templates\"]") @map("enabled_modules")
+
+  // Performance and limits
+  requestTimeout         Int       @default(30000) @map("request_timeout")
+  maxContentItems        Int       @default(1000) @map("max_content_items")
+  rateLimitDelay         Int       @default(100) @map("rate_limit_delay")
+
+  // Site metadata
+  description            String?
+  businessUnit           String?   @map("business_unit")
+  technologyStack        Json      @default("{}") @map("technology_stack")
+
+  // Timestamps
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  scans                  Scan[]
+  graphqlTypes          GraphqlType[]
+  contentItems          ContentItem[]
+  templateDefinitions   TemplateDefinition[]
+  fieldUsageStatistics  FieldUsageStatistic[]
+  parentRelationships   SiteRelationship[] @relation("ParentSite")
+  childRelationships    SiteRelationship[] @relation("ChildSite")
+
+  @@unique([customerId, fqdn])
+  @@unique([customerId, sitecoreUrl])
+  @@map("customer_sites")
+}
+
+model SiteRelationship {
+  id                     String       @id @default(uuid())
+  parentSiteId           String       @map("parent_site_id")
+  parentSite             CustomerSite @relation("ParentSite", fields: [parentSiteId], references: [id], onDelete: Cascade)
+  childSiteId            String       @map("child_site_id")
+  childSite              CustomerSite @relation("ChildSite", fields: [childSiteId], references: [id], onDelete: Cascade)
+  relationshipType       String       @map("relationship_type")
+  relationshipStrength   Float        @default(1.0) @map("relationship_strength")
+  createdAt              DateTime     @default(now()) @map("created_at")
+
+  @@unique([parentSiteId, childSiteId])
+  @@map("site_relationships")
+}
+
+// =============================
+// ENHANCED SCANS TABLE
+// =============================
+
+model Scan {
+  id                     String    @id @default(uuid())
+  customerId             String    @map("customer_id")
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                 String    @map("site_id")
+  site                   CustomerSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Scan identification
+  scanName               String?   @map("scan_name")
+  scanType               String    @default("Full") @map("scan_type")
+
+  // Scan details
+  targetUrl              String    @map("target_url")
+  status                 String    @default("pending")
+  startedAt              DateTime  @default(now()) @map("started_at")
+  completedAt            DateTime? @map("completed_at")
+
+  // Analysis scope
+  modulesRequested       Json      @default("[\"enhanced-schema\", \"enhanced-content\", \"enhanced-templates\"]") @map("modules_requested")
+  analysisDepth          String    @default("Standard") @map("analysis_depth")
+
+  // Results summary
+  totalModules           Int       @default(0) @map("total_modules")
+  successfulModules      Int       @default(0) @map("successful_modules")
+  averageConfidence      Float     @default(0.0) @map("average_confidence")
+
+  // Performance metrics
+  totalDurationMs        Int       @default(0) @map("total_duration_ms")
+  totalApiCalls          Int       @default(0) @map("total_api_calls")
+  totalDataSizeKb        Int       @default(0) @map("total_data_size_kb")
+
+  // Error handling
+  errorCount             Int       @default(0) @map("error_count")
+  warningsCount          Int       @default(0) @map("warnings_count")
+  criticalIssues         Json      @default("[]") @map("critical_issues")
+
+  // Scan context
+  triggeredBy            String    @default("Manual") @map("triggered_by")
+  triggerDetails         Json      @default("{}") @map("trigger_details")
+
+  // Timestamps
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  modules                ScanModule[]
+
+  @@map("scans_v2")
+}
+
+model ScanModule {
+  id                     String    @id @default(uuid())
+  scanId                 String    @map("scan_id")
+  scan                   Scan      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  module                 String
+  dataSource             String    @map("data_source")
+  confidence             Float     @default(0.0)
+  durationMs             Int       @default(0) @map("duration_ms")
+  error                  String?
+  requiresCredentials    Boolean   @default(false) @map("requires_credentials")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  analysisResults        AnalysisResult[]
+
+  @@map("scan_modules")
+}
+
+model AnalysisResult {
+  id                     String     @id @default(uuid())
+  scanModuleId           String     @map("scan_module_id")
+  scanModule             ScanModule @relation(fields: [scanModuleId], references: [id], onDelete: Cascade)
+  result                 Json
+  createdAt              DateTime   @default(now()) @map("created_at")
+
+  @@map("analysis_results")
+}
+
+// =============================
+// ENHANCED MULTI-SITE DATA TABLES
+// =============================
+
+model GraphqlType {
+  id                     String       @id @default(uuid())
+  scanId                 String       @map("scan_id")
+  customerId             String?      @map("customer_id")
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                 String?      @map("site_id")
+  site                   CustomerSite? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  name                   String
+  kind                   String
+  description            String?
+  isDeprecated           Boolean      @default(false) @map("is_deprecated")
+  deprecationReason      String?      @map("deprecation_reason")
+  fieldCount             Int          @default(0) @map("field_count")
+  interfaceCount         Int          @default(0) @map("interface_count")
+
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  fields                 GraphqlField[]
+  interfaces             GraphqlInterface[]
+
+  @@unique([scanId, name])
+  @@map("graphql_types")
+}
+
+model GraphqlField {
+  id                     String      @id @default(uuid())
+  typeId                 String      @map("type_id")
+  type                   GraphqlType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+
+  name                   String
+  fieldType              String      @map("field_type")
+  description            String?
+  isDeprecated           Boolean     @default(false) @map("is_deprecated")
+  deprecationReason      String?     @map("deprecation_reason")
+  isList                 Boolean     @default(false) @map("is_list")
+  isNonNull              Boolean     @default(false) @map("is_non_null")
+  isScalar               Boolean     @default(false) @map("is_scalar")
+  arguments              Json        @default("[]")
+  typeDetail             Json        @default("{}")  @map("type_detail")
+
+  createdAt              DateTime    @default(now()) @map("created_at")
+
+  @@unique([typeId, name])
+  @@map("graphql_fields")
+}
+
+model GraphqlInterface {
+  id                     String      @id @default(uuid())
+  typeId                 String      @map("type_id")
+  type                   GraphqlType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  interfaceName          String      @map("interface_name")
+  createdAt              DateTime    @default(now()) @map("created_at")
+
+  @@unique([typeId, interfaceName])
+  @@map("graphql_interfaces")
+}
+
+model ContentItem {
+  id                     String       @id @default(uuid())
+  scanId                 String       @map("scan_id")
+  customerId             String?      @map("customer_id")
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                 String?      @map("site_id")
+  site                   CustomerSite? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  sitecoreId             String       @map("sitecore_id")
+  name                   String
+  path                   String
+  displayName            String?      @map("display_name")
+  templateName           String?      @map("template_name")
+  templateId             String?      @map("template_id")
+  hasChildren            Boolean      @default(false) @map("has_children")
+  childCount             Int          @default(0) @map("child_count")
+  depthLevel             Int          @default(0) @map("depth_level")
+  isPublished            Boolean      @default(true) @map("is_published")
+  language               String       @default("en")
+
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  fieldValues            ContentFieldValue[]
+
+  @@unique([scanId, sitecoreId])
+  @@map("content_items")
+}
+
+model ContentFieldValue {
+  id                     String      @id @default(uuid())
+  itemId                 String      @map("item_id")
+  item                   ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  fieldName              String      @map("field_name")
+  fieldValue             String?     @map("field_value")
+  valueType              String      @map("value_type")
+  valueLength            Int         @default(0) @map("value_length")
+  hasValue               Boolean     @default(false) @map("has_value")
+  isEmpty                Boolean     @default(true) @map("is_empty")
+  wordCount              Int         @default(0) @map("word_count")
+  containsHtml           Boolean     @default(false) @map("contains_html")
+  containsLinks          Boolean     @default(false) @map("contains_links")
+
+  createdAt              DateTime    @default(now()) @map("created_at")
+
+  @@unique([itemId, fieldName])
+  @@map("content_field_values")
+}
+
+model TemplateDefinition {
+  id                     String       @id @default(uuid())
+  scanId                 String       @map("scan_id")
+  customerId             String?      @map("customer_id")
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                 String?      @map("site_id")
+  site                   CustomerSite? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  templateId             String       @map("template_id")
+  templateName           String       @map("template_name")
+  templatePath           String?      @map("template_path")
+  isSystemTemplate       Boolean      @default(false) @map("is_system_template")
+  usageCount             Int          @default(0) @map("usage_count")
+  baseTemplates          Json         @default("[]") @map("base_templates")
+  inheritanceChain       Json         @default("[]") @map("inheritance_chain")
+  fieldCount             Int          @default(0) @map("field_count")
+  sectionCount           Int          @default(0) @map("section_count")
+
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  fields                 TemplateField[]
+  childInheritance       TemplateInheritance[] @relation("ChildTemplate")
+  parentInheritance      TemplateInheritance[] @relation("ParentTemplate")
+
+  @@unique([scanId, templateId])
+  @@map("template_definitions")
+}
+
+model TemplateField {
+  id                     String             @id @default(uuid())
+  templateId             String             @map("template_id")
+  template               TemplateDefinition @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  fieldName              String             @map("field_name")
+  fieldType              String?            @map("field_type")
+  fieldId                String?            @map("field_id")
+  isRequired             Boolean            @default(false) @map("is_required")
+  isShared               Boolean            @default(false) @map("is_shared")
+  isUnversioned          Boolean            @default(false) @map("is_unversioned")
+  maxLength              Int?               @map("max_length")
+  sectionName            String?            @map("section_name")
+  sortOrder              Int                @default(0) @map("sort_order")
+  validationRegex        String?            @map("validation_regex")
+  defaultValue           String?            @map("default_value")
+  helpText               String?            @map("help_text")
+  usageCount             Int                @default(0) @map("usage_count")
+  avgContentLength       Float?             @map("avg_content_length")
+
+  createdAt              DateTime           @default(now()) @map("created_at")
+
+  @@unique([templateId, fieldName])
+  @@map("template_fields")
+}
+
+model TemplateInheritance {
+  id                     String             @id @default(uuid())
+  childTemplateId        String             @map("child_template_id")
+  childTemplate          TemplateDefinition @relation("ChildTemplate", fields: [childTemplateId], references: [id], onDelete: Cascade)
+  parentTemplateId       String             @map("parent_template_id")
+  parentTemplate         TemplateDefinition @relation("ParentTemplate", fields: [parentTemplateId], references: [id], onDelete: Cascade)
+  inheritanceLevel       Int                @default(1) @map("inheritance_level")
+  createdAt              DateTime           @default(now()) @map("created_at")
+
+  @@unique([childTemplateId, parentTemplateId])
+  @@map("template_inheritance")
+}
+
+model FieldUsageStatistic {
+  id                     String       @id @default(uuid())
+  scanId                 String       @map("scan_id")
+  customerId             String?      @map("customer_id")
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                 String?      @map("site_id")
+  site                   CustomerSite? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  fieldName              String       @map("field_name")
+  totalOccurrences       Int          @default(0) @map("total_occurrences")
+  templatesUsingField    Int          @default(0) @map("templates_using_field")
+  itemsWithValues        Int          @default(0) @map("items_with_values")
+  itemsEmpty             Int          @default(0) @map("items_empty")
+  avgContentLength       Float?       @map("avg_content_length")
+  maxContentLength       Int?         @map("max_content_length")
+  commonValueTypes       Json         @default("[]") @map("common_value_types")
+  queryFrequency         Int          @default(0) @map("query_frequency")
+  lastAnalyzed           DateTime     @default(now()) @map("last_analyzed")
+
+  @@unique([scanId, fieldName])
+  @@map("field_usage_statistics")
+}
+
+// =============================
+// CROSS-SITE ANALYSIS TABLES
+// =============================
+
+model CrossSiteComparison {
+  id                     String    @id @default(uuid())
+  customerId             String    @map("customer_id")
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  comparisonName         String    @map("comparison_name")
+  comparisonType         String    @map("comparison_type")
+  primarySiteId          String    @map("primary_site_id")
+  comparisonSites        Json      @map("comparison_sites")
+  analysisDimensions     Json      @map("analysis_dimensions")
+  weightConfiguration    Json      @default("{}") @map("weight_configuration")
+  comparisonResults      Json      @map("comparison_results")
+  summaryInsights        Json      @default("{}") @map("summary_insights")
+  recommendations        Json      @default("[]")
+  confidenceScore        Float     @default(0.0) @map("confidence_score")
+  analysisVersion        String?   @map("analysis_version")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  @@map("cross_site_comparisons")
+}
+
+model PortfolioInsight {
+  id                     String    @id @default(uuid())
+  customerId             String    @map("customer_id")
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  insightType            String    @map("insight_type")
+  scope                  String
+  includedSites          Json      @map("included_sites")
+  analysisPeriod         Json      @map("analysis_period")
+  insightData            Json      @map("insight_data")
+  keyMetrics             Json      @default("{}") @map("key_metrics")
+  recommendations        Json      @default("[]")
+  estimatedEffortHours   Int?      @map("estimated_effort_hours")
+  estimatedCostSavings   Float?    @map("estimated_cost_savings")
+  priorityScore          Int       @default(5) @map("priority_score")
+  confidenceScore        Float     @default(0.0) @map("confidence_score")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  expiresAt              DateTime? @map("expires_at")
+
+  @@map("portfolio_insights")
+}
+
+model BenchmarkData {
+  id                     String    @id @default(uuid())
+  benchmarkType          String    @map("benchmark_type")
+  benchmarkCategory      String    @map("benchmark_category")
+  metricName             String    @map("metric_name")
+  metricValue            Float     @map("metric_value")
+  sampleSize             Int       @map("sample_size")
+  percentile25           Float?    @map("percentile_25")
+  percentile50           Float?    @map("percentile_50")
+  percentile75           Float?    @map("percentile_75")
+  percentile90           Float?    @map("percentile_90")
+  dataSource             String    @default("PLATFORM_AGGREGATE") @map("data_source")
+  collectionPeriod       Json      @map("collection_period")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  @@unique([benchmarkType, benchmarkCategory, metricName, collectionPeriod])
+  @@map("benchmark_data")
+}
